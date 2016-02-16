@@ -105,6 +105,8 @@ function grid_output(fname, gp, gd; overwrite=false)
         end
         for i in keys(gd[cgp.id].d)
             g[i] = squeeze(gd[cgp.id].d[i])
+            # this attribute helps veusz interpret the range of the image
+            attrs(g[i])["vsz_range"] = [gp[1].LE[1], gp[1].LE[2], gp[1].RE[1],gp[1].RE[2]]
         end
     end
     close(f)
