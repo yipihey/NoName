@@ -1,7 +1,7 @@
 ---
 # NoName: 
 ## A code for Computational Cosmology Algorithm Exploration
-### author: Tom Abel
+
 
 ---
 
