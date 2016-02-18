@@ -1,7 +1,7 @@
 ---
 # NoName: 
 ## A code for Computational Cosmology Algorithm Exploration
-
+### author: Tom Abel
 
 ---
 
@@ -33,22 +33,23 @@ This assumes that the `LOAD_PATH` contains the directory in which to find
 You can make sure it is always found by adding 
 `push!(LOAD_PATH, "/Users/tabel/Research/codes/noname/src")`
 (make sure to change this to your path!) in your
-`$HOME/.juliarc` 
+`$HOME/.juliarc.jl` 
 file. 
 
 ## Dependencies
+	* Add the following packages with Pkg.add("Logging") etc...
 	* Logging      for basic and colorful logging
 	* AppConf      for configuration file management
 	* HDF5         data output
 	* JLD          restart functionality
 	* ArgParse     to parse commandline
 	* Cosmology    for cosmological comoving coordinates
-	* NearestNeighbors  for SPH and Friend of friends 
+	* NearestNeighbors  for SPH and Friend of friends group finding
 
 
 ## Caveats
 	* No kind of parallelism so far
-	* Hydro does not work yet
+	* Hydro not fully implemented
 	* My first larger julia code framework so very likely full of idiosyncracies 
 
 ## Configuration files

@@ -1,5 +1,4 @@
 
-
 function analyzePM(gp, gd, p)
 
     if !IOtools.readyForOutput(conf)
@@ -30,8 +29,6 @@ function analyzePM(gp, gd, p)
     fname = string(newD,"/",s,".h5")
     IOtools.grid_output(fname, gp, gd,overwrite=true)
     IOtools.particle_output(fname, p)
-    
-    
     
     
 end
