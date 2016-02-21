@@ -1,7 +1,7 @@
 ---
 # NoName: 
 ## A code for Computational Cosmology Algorithm Exploration
-### author: Tom Abel
+### author: Tom Abel (2/2016)
 
 ---
 
@@ -61,6 +61,9 @@ and store a `default.conf` there to match their preferences. This
 user defined file will be read just before the one specified on the command line at
 invocation `julia ../../src/noname.jl particle_mesh.conf`. 
 The one on the command line has the last word. 
+
+## Submodules and functionality
+	* [Input PowerSpectra](doc/InputPowerSPectra.md)
 
 ## Parameters
 

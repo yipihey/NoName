@@ -1,3 +1,4 @@
+include("InputPowerSpectra.jl")
 
 function analyzePM(gp, gd, p)
 
@@ -50,33 +51,40 @@ function InitializeParticleSimulation(gp, gd, p)
     # allocate our arrays for the grid quantities
     d.d["ρD"]  = ones(gp[1].dim) # mass density 
     d.d["Φ"]   = ones(gp[1].dim) # gravitational potential
-#    dictionary_to_variable_names(d.d) # shortcuts for the variable names
 
     # allocate particles
     p["x"] = zeros(rank, Npart)
     p["v"] = zeros(rank, Npart)
     p["m"] = 1./Npart
+
+    # Initialize a PowerSpectrum if requested
+    if haskey(conf, "InputPowerSpectrum")
+        eval(parse(conf["InputPowerSpectrum"]))
+    end
     
      # call Initializer given as ProblemDefinition in the .conf file
     eval(parse(string("initialvalues=",conf["ProblemDefinition"])))
 
     initialvalues(gp, gd, p)    
 
-    @show gp
     nothing
 end
 
 function UniformParticles(gp, gd, p)
 
     initialize_particles_uniform(p["x"])
-
     
     nothing
 end
 
-function scaleFreePowerSpectrumParticles(gp, gd, p)
-    
 
+function PowerSpectrumParticles(gp, gd, p)
+
+    x = p["x"]
+    rank = size(x,1)
+    dims = size(gd["Φ"])
+    φ = zeros(Complex,dims) #
+    
     nothing
 end
 
