@@ -13,8 +13,8 @@ We aim to support a flexible integration of how to specify powerspectra to initi
 ### Powerlaw Scale Free Spectra
 These are specifed by the powerlaw index and their normalization.
 So that in your `.conf` file
-```InputPowerSpectrum = scaleFreePS(-1, 0.1)```
-would be a $P = 0.1 \times k^{-1}$ Powerspectrum. 
+```InputPowerSpectrum = scaleFreePS(n, norm)```
+would be a P = norm × kⁿ Powerspectrum. 
 
 ### Delta Function of Powerlaw Spectra
 ```
