@@ -63,7 +63,7 @@ invocation `julia ../../src/noname.jl particle_mesh.conf`.
 The one on the command line has the last word. 
 
 ## Submodules and functionality
- .. [Input PowerSpectra](doc/InputPowerSPectra.md)
+ [Input PowerSpectra](./doc/InputPowerSPectra.md)
 
 ## Parameters
 
