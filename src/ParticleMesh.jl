@@ -59,12 +59,12 @@ function InitializeParticleSimulation(gp, gd, p)
 
     # Initialize a PowerSpectrum if requested
     if haskey(conf, "InputPowerSpectrum")
-        eval(parse(conf["InputPowerSpectrum"]))
+        eval(parse(string("global const ps = ", conf["InputPowerSpectrum"])))
     end
     
      # call Initializer given as ProblemDefinition in the .conf file
     eval(parse(string("initialvalues=",conf["ProblemDefinition"])))
-
+    
     initialvalues(gp, gd, p)    
 
     nothing
@@ -77,13 +77,50 @@ function UniformParticles(gp, gd, p)
     nothing
 end
 
+function fftfreq(iijk, dims)
+    ijk = iijk
+    s = div(dims,2)
+    k = 2pi .* (ijk-1 - ((ijk .> (s+1)).*dims)) ./dims
+end
+
 
 function PowerSpectrumParticles(gp, gd, p)
 
     x = p["x"]
+    initialize_particles_uniform(x)
+
     rank = size(x,1)
-    dims = size(gd["Φ"])
-    φ = zeros(Complex,dims) #
+    dims = conf["ParticleDimensions"]
+    ndims = copy(dims)
+    ndims[1] = div(dims[1],2)+1
+    c = zeros(Complex{Float64},ndims...) #
+    Si = zeros(Float64, (rank, (dims[dims .> 1])...))
+    for dd in 1:rank
+        for i in 1:ndims[1], j in 1:dims[2], k in 1:dims[3]
+            kf = fftfreq([i,j,k], dims)
+            k2 = dot(kf,kf)
+            ka = sqrt(k2)
+            gauss = randn(2)
+            PSv = sqrt(P(ka, ps))
+            ak = Float64(PSv * gauss[1]/k2)
+            bk = Float64(PSv * gauss[2]/k2)
+#            println(k2,":", PSv)
+            if k2 > 0 
+                c[i,j,k] = (ak - im * bk)/2 * kf[dd]
+            end
+        end
+        println(summary(c))
+        Si[dd,:] = irfft(squeeze(c), dims[1])
+        @show size(Si)
+    end
+
+    # Apply displacement field
+    for i in 1:size(x,2)
+        for dd in 1:rank
+            x[dd,i] += Si[dd,i]
+        end
+    end
+    
     
     nothing
 end
@@ -279,7 +316,7 @@ function potential_2d(phi,rho,rt)
     Nglx = TopgridDimensions[1]
     Ngly = TopgridDimensions[2]
 
-    Ngl2y = round(Int64, Ngly/2)
+    Ngl2y = div(Ngly,2)
 
     rt[:] = rfft(rho)
 

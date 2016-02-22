@@ -1,5 +1,4 @@
 
-
 type scaleFreePS
     n
     norm
@@ -11,11 +10,12 @@ type multiplePeaksPS
     ps::scaleFreePS # could generalize this further to more PSs
 end
 
+inputPowerSpectrum = Union{scaleFreePS, multiplePeaksPS}
+
 
 multiplePeaksPS(n,norm,k,lnδk) = multiplePeaksPS(k, lnδk,
                                                  scaleFreePS(n,norm))
 
-inputPowerSpectrum = Union{scaleFreePS, multiplePeaksPS}
 
 function multiplePeaksPS{T<:Real}(n, norm, k::Array, lnδk::T)
     ndelta = zeros(k)
@@ -23,7 +23,6 @@ function multiplePeaksPS{T<:Real}(n, norm, k::Array, lnδk::T)
     multiplePeaksPS(n, norm, k, ndelta)
 end
    
-
 P(k::Real, PS::scaleFreePS) = PS.norm*convert(Float64,k)^PS.n
 
 function P{T<:Real}(ki::T, PS::multiplePeaksPS)

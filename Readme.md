@@ -1,9 +1,8 @@
----
-# NoName: 
+# NoName
 ## A code for Computational Cosmology Algorithm Exploration
-### author: Tom Abel (2/2016)
+(2/2016-)
 
----
+
 
 # Introduction
 NoName is the beginnings of a Computational Cosmology code of so far 
@@ -16,9 +15,9 @@ codes.
 
 
 ## Current Features
-	* Particle Mesh dynamics of collisionless particles
-	* Comoving Coordinates
-	* Restart files
+- Particle Mesh dynamics of collisionless particles
+- Comoving Coordinates
+- Restart files
 
 
 ## Getting Started
@@ -37,20 +36,22 @@ You can make sure it is always found by adding
 file. 
 
 ## Dependencies
-	* Add the following packages with Pkg.add("Logging") etc...
-	* Logging      for basic and colorful logging
-	* AppConf      for configuration file management
-	* HDF5         data output
-	* JLD          restart functionality
-	* ArgParse     to parse commandline
-	* Cosmology    for cosmological comoving coordinates
-	* NearestNeighbors  for SPH and Friend of friends group finding
+ Add the following packages with `Pkg.add("Logging")` etc...
+ Currently for AppConf we should use `Pkg.checkout("AppConf")` to get the latest version that has not been tagged as a release yet.
+ 
+- [Logging](https://github.com/kmsquire/Logging.jl)      for basic and colorful logging
+- [AppConf](https://github.com/tmlbl/AppConf.jl)      for configuration file management
+- [HDF5](https://github.com/JuliaLang/HDF5.jl)         data output
+- [JLD](https://github.com/JuliaLang/JLD.jl)          restart functionality
+- [ArgParse](https://github.com/carlobaldassi/ArgParse.jl)     to parse commandline
+- [Cosmology](https://github.com/JuliaAstro/Cosmology.jl)    for cosmological comoving coordinates
+- [NearestNeighbors](https://github.com/KristofferC/NearestNeighbors.jl)  for SPH and Friend of friends group finding
 
 
 ## Caveats
-	* No kind of parallelism so far
-	* Hydro not fully implemented
-	* My first larger julia code framework so very likely full of idiosyncracies 
++ No kind of parallelism so far
++ Hydro not fully implemented
++ My first larger julia code framework so very likely full of idiosyncracies 
 
 ## Configuration files
 
