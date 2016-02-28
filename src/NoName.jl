@@ -1,6 +1,7 @@
 module NoName
 #push!(LOAD_PATH,"./")
 NONAME_SRC_DIR=dirname(Base.source_path())
+println(NONAME_SRC_DIR)
 #push!(LOAD_PATH, NONAME_SRC_DIR)
 export noname, run_noname
 

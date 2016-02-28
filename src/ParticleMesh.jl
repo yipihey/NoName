@@ -642,7 +642,7 @@ function evolvePM(gp, gd, p)
         
         if ((c["CurrentTime"]+dt) > StopTime )
             dt = (1. + 1e-15)*(StopTime - c["CurrentTime"])
-            println("final dt", dt)
+            println("final dt = ", dt)
         end
         c["CurrentCycle"] += 1
 
