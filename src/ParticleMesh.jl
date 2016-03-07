@@ -1,3 +1,4 @@
+using PyPlot
 include("InputPowerSpectra.jl")
 
 function analyzePM(gp, gd, p)
@@ -38,6 +39,15 @@ function analyzePM(gp, gd, p)
     IOtools.particle_output(fname, p)
     
     
+    # saving power spectrum
+    fname = string(newD,"/",s,"_PS.png")
+    karray, power = powerSpectrum(gp, gd, p)
+    loglog(karray, power)
+    xlabel("k")
+    ylabel("P(k)")
+    title("Power spectrum")
+    savefig(fname)
+    close() 
 end
 
 function InitializeParticleSimulation(gp, gd, p)
@@ -663,6 +673,7 @@ function evolvePM(gp, gd, p)
     v = p["v"]
     m = p["m"]
     rho = gd[1].d["ρD"]
+
     φ = gd[1].d["Φ"]          # potential
     acc   = zeros((3,g.dim...)) 
     
@@ -708,6 +719,42 @@ function evolvePM(gp, gd, p)
 
 end
 
+function powerSpectrum(gp, gd, p)
+    x = p["x"]
+    make_periodic(x)
+    v = p["v"]
+    m = p["m"]
+    dims = collect(gp[1].dim) # grid dimensions
+    box = gp[1].RE - gp[1].LE # box size (may be different from 1.0^3??)
+    rho = zeros(gd[1].d["ρD"])
+    deposit(rho, x, m, interpolation=ParticleDepositInterpolation)
+    rho_mean = mean(rho)
+    delta = rho/rho_mean - 1 # density fluctuation
+
+    deltak2 = abs(fft(delta)).^2 * prod(box) / prod(dims)^2
+    
+    dk = 2pi / maximum(dims) # bin width
+    #println("dk", dk)
+    lenk = round(Int, maximum(dims)/2) # k array length
+    karray = collect(1:lenk) * dk # k array
+    power = zeros(lenk) # power spectrum
+    counts = zeros(lenk) # array to keep counts
+    # we first add up power for each bin, then divide by counts 
+    for k in 1:dims[3], j in 1:dims[2], i in 1:dims[1]
+        kf = fftfreq([i,j,k], dims)
+        ka = sqrt(dot(kf,kf))
+        # find the bin where ka falls
+        n = round(Int, ka/dk)
+        if n >= 1 && n <= lenk
+            power[n] += deltak2[i,j,k]
+            counts[n] += 1
+        end
+    end # END looping over all frequencies
+    
+    power = power./counts
+
+    karray, power
+end
 
 function evolvePMCosmology(gp, gd, p)
     @debug("Entered evolvePM")
