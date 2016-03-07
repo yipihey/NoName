@@ -1,4 +1,4 @@
-module GridTypes
+ module GridTypes
 export GridPatch, GridData
 
 type GridPatch{T<:Real,N}
@@ -7,7 +7,7 @@ type GridPatch{T<:Real,N}
     id::Integer    # identifier
     level::Integer # For AMR someday ... 
     dim::Tuple     # dimensions of grid patch
-end
+end 
 
 """ Type to hold Grid data, 
 """

@@ -10,6 +10,12 @@ function analyzePM(gp, gd, p)
     if !isdir(OutputDirectory)
         mkdir(OutputDirectory)
     end
+
+    @info("Output:", c["CurrentOutputNumber"], ": CurrentTime:", c["CurrentTime"])
+    if isdefined(:cosmo)
+        @info("CurrentRedshift:", c["CurrentRedshift"])
+    end
+    
     on = c["CurrentOutputNumber"] # Since we are changing it cannot use shortcut
     s = @sprintf("%5.5i", on)
     newD = OutputDirectory
@@ -55,14 +61,34 @@ function InitializeParticleSimulation(gp, gd, p)
     # allocate particles
     p["x"] = zeros(rank, Npart)
     p["v"] = zeros(rank, Npart)
-    p["m"] = 1./Npart
+    p["m"] = 1.0 * length(d.d["ρD"])/Npart # unity for particle mass.
 
-    # Initialize a PowerSpectrum if requested
-    if haskey(conf, "InputPowerSpectrum")
-        eval(parse(string("global const ps = ", conf["InputPowerSpectrum"])))
+    # define cosmology if it is specified in parameter file
+    if haskey(conf, "Cosmology")
+        eval(parse(string("global const cosmo=",conf["Cosmology"])))
+        if haskey(conf, "InitialRedshift") # set start times from redshift
+            zstart = conf["InitialRedshift"]
+            u = get_units(cosmo, zstart, zinit=zstart)
+            tstart = age_gyr(cosmo, zstart)*(gyr_in_s/u.T)
+            zend = conf["FinalRedshift"]
+            tend = age_gyr(cosmo, zend)*(gyr_in_s/u.T)
+            conf["CurrentTime"] = conf["StartTime"] = tstart
+            conf["StopTime"] = tend
+            @info("Start Redshift:", zstart, " -> t_start = ",tstart)
+
+            conf["OmegaCDM"] = cosmo.Ω_m
+            if haskey(conf,"OmegaBaryon")
+                conf["OmegaCDM"] = cosmo.Ω_m - conf["OmegaBaryon"]
+            end
+            p["m"] .*= conf["OmegaCDM"] # particles
+             
+        else
+            @warn("Specified Cosmology but gave no InitialRedshift! ")
+            @warn("Proceed with caution ...")
+        end
     end
     
-     # call Initializer given as ProblemDefinition in the .conf file
+    # call Initializer given as ProblemDefinition in the .conf file
     eval(parse(string("initialvalues=",conf["ProblemDefinition"])))
     
     initialvalues(gp, gd, p)    
@@ -86,6 +112,13 @@ end
 
 function PowerSpectrumParticles(gp, gd, p)
 
+    # Initialize a PowerSpectrum if requested
+    if haskey(conf, "InputPowerSpectrum")
+        eval(parse(string("const ps = ", conf["InputPowerSpectrum"])))
+    else
+        @critical("Requested to use PowerSpectrumParticles but did not specify InputPowerSpectrum")
+    end
+
     x = p["x"]
     initialize_particles_uniform(x)
 
@@ -96,7 +129,7 @@ function PowerSpectrumParticles(gp, gd, p)
     c = zeros(Complex{Float64},ndims...) #
     Si = zeros(Float64, (rank, (dims[dims .> 1])...))
     for dd in 1:rank
-        for i in 1:ndims[1], j in 1:dims[2], k in 1:dims[3]
+        for k in 1:dims[3], j in 1:dims[2], i in 1:ndims[1]
             kf = fftfreq([i,j,k], dims)
             k2 = dot(kf,kf)
             ka = sqrt(k2)
@@ -111,16 +144,16 @@ function PowerSpectrumParticles(gp, gd, p)
         end
         println(summary(c))
         Si[dd,:] = irfft(squeeze(c), dims[1])
-        @show size(Si)
+#        @show size(Si)
     end
 
     # Apply displacement field
-    for i in 1:size(x,2)
+    for i in 1:size(x,2)5
         for dd in 1:rank
             x[dd,i] += Si[dd,i]
         end
     end
-    
+    # Setup velocities : Still need to implement ...
     
     nothing
 end
@@ -172,6 +205,7 @@ function deposit(rho,x,m; interpolation="none")
         sicdensity(rho,x,m)
     end
 
+    
 end
 
 function sic_interp_1d(pa, a, x)
@@ -600,23 +634,43 @@ function kick(v,a,dt)
     nothing
 end
 
+#cosmology case
+function kick(v,pa,dt,dadt)
+#semi implicit integration
+    coef = 0.5*dadt*dt
+    coef1 = 1.0 - coef
+    coef2 = 1.0 / (1.0 + coef)
+
+    for n in eachindex(v)
+        v[n] = (coef1*v[n] + dt*pa[n])*coef2
+    end
+    nothing
+end
+
+
+
 function evolvePM(gp, gd, p)
     @debug("Entered evolvePM")
-    g = gp[1] # ony supporting one grid patch for now
+    c = conf # convenience
+
+    if isdefined(:cosmo)
+        @warn("evolvePM: You defined a cosmology. This Evolve routine will not use it.")
+        @warn("evolvePM: You may want to use evolvePMCosmology")
+    end
+
+    g = gp[1] # only supporting one grid patch for now
     x = p["x"]
     v = p["v"]
     m = p["m"]
     rho = gd[1].d["ρD"]
-    phi = gd[1].d["Φ"]          # potential
-    a   = zeros((3,g.dim...)) 
-
+    φ = gd[1].d["Φ"]          # potential
+    acc   = zeros((3,g.dim...)) 
+    
     pa = zeros(x)          # particle accelerations
-    rt = rfft(phi) # initialize buffer for real-to complex transform
+    rt = rfft(φ) # initialize buffer for real-to complex transform
 
     dx = 1. /maximum(g.dim) # smallest dx
     dt = InitialDt
-
-    c = conf # conevenience
     
     c["CurrentTime"] = c["StartTime"]
     c["CurrentCycle"] = c["StartCycle"]
@@ -626,11 +680,12 @@ function evolvePM(gp, gd, p)
         deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
         rho_mean = mean(rho)
         rho -= rho_mean # the total sum of the density needs to be zero for a periodic signal
-        compute_potential(phi, rho, rt)
-        compute_acceleration(a, phi)
-        interpVecToPoints(pa, a, x, interpolation=ParticleBackInterpolation)
+        compute_potential(φ, rho, rt)
+        compute_acceleration(acc, φ)
+        interpVecToPoints(pa, acc, x, interpolation=ParticleBackInterpolation)
 
-        # LeapFrog step. Some codes combine the two drift steps 
+        # LeapFrog step. Some codes combine the two drift steps,
+        # but then need to worry about x and v being known at different times. 
         drift(x,v,dt/2)
         kick(v,pa,dt)
         drift(x,v,dt/2)
@@ -640,8 +695,8 @@ function evolvePM(gp, gd, p)
         dt = CourantFactor*dx/maximum(abs(v)+1e-30)
         dt = minimum([dt, MaximumDt])
         
-        if ((c["CurrentTime"]+dt) > StopTime )
-            dt = (1. + 1e-15)*(StopTime - c["CurrentTime"])
+        if ((c["CurrentTime"]+dt) > c["StopTime"] )
+            dt = (1. + 1e-15)*(c["StopTime"] - c["CurrentTime"])
             println("final dt = ", dt)
         end
         c["CurrentCycle"] += 1
@@ -653,4 +708,76 @@ function evolvePM(gp, gd, p)
 
 end
 
+
+function evolvePMCosmology(gp, gd, p)
+    @debug("Entered evolvePM")
+    if !isdefined(NoName,:cosmo)
+        @warn("evolvePMCosmology: No cosmology defined!")
+    end
+
+    c = conf # convenience
+
+    g = gp[1] # only supporting one grid patch for now
+    x = p["x"]
+    v = p["v"]
+    m = p["m"]
+    rho = gd[1].d["ρD"]
+    φ = gd[1].d["Φ"]          # potential
+    acc   = zeros((3,g.dim...)) 
+    a = 1.0
+    ȧ = 0.0
+    
+    pa = zeros(x)          # particle accelerations
+    rt = rfft(φ) # initialize buffer for real-to complex transform
+
+    dx = 1. /maximum(g.dim) # smallest dx
+    dt = InitialDt
+    zinit = conf["InitialRedshift"]
+    
+    c["CurrentTime"]  = c["StartTime"]
+    c["CurrentCycle"] = c["StartCycle"]
+
+    
+    while c["CurrentTime"] < c["StopTime"] && c["CurrentCycle"] < c["StopCycle"]
+        make_periodic(x)
+        deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
+
+        compute_potential(φ, rho .- mean(rho), rt)
+        compute_acceleration(acc, φ)
+        interpVecToPoints(pa, acc, x, interpolation=ParticleBackInterpolation)
+
+        a = a_from_t_internal(cosmo, c["CurrentTime"]+dt/2, zinit, zwherea1=zinit)
+        ȧ = dadt(cosmo, a, zwherea1=zinit)
+        
+        # LeapFrog step. Some codes combine the two drift steps,
+        # but then need to worry about x and v being known at different times. 
+        a = a_from_t_internal(cosmo, c["CurrentTime"] + dt/2/2, zinit, zwherea1=zinit)
+        drift(x,v,dt/2/a)
+        a = a_from_t_internal(cosmo, c["CurrentTime"] + dt, zinit, zwherea1=zinit)
+        ȧ = dadt_from_t_internal(cosmo, c["CurrentTime"] + dt, zinit, zhwerea1=zinit)
+        kick(v,pa,dt/a, ȧ)
+        a = a_from_t_internal(cosmo, c["CurrentTime"] + 3.0*dt/2/2, zinit, zwherea1=zinit)
+        drift(x,v,dt/2/a)
+
+        println("a: ", a)
+        
+        c["CurrentTime"] += dt
+        c["CurrentRedshift"] = z_from_t_internal(cosmo, c["CurrentTime"], zinit)
+
+        dt = CourantFactor*dx/maximum(abs(v)+1e-30)
+        dtFrac = DtFractionOfTime*c["CurrentTime"]
+        dt = min(dt, dtFrac, MaximumDt)
+        
+        if ((c["CurrentTime"]+dt) > c["StopTime"] )
+            dt = (1. + 1e-6)*(c["StopTime"] - c["CurrentTime"])
+            println("final dt = ", dt)
+        end
+        c["CurrentCycle"] += 1
+
+        analyzePM(gp, gd, p) # check for output
+    end
+
+    @info("Evolved to time:", c["CurrentTime"], " Redshift:", c["CurrentRedshift"])
+
+end
 

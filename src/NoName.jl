@@ -1,8 +1,7 @@
 module NoName
-#push!(LOAD_PATH,"./")
 NONAME_SRC_DIR=dirname(Base.source_path())
 println(NONAME_SRC_DIR)
-#push!(LOAD_PATH, NONAME_SRC_DIR)
+
 export noname, run_noname
 
 using Logging, AppConf, IOtools
@@ -11,11 +10,11 @@ using Logging, AppConf, IOtools
 include("PrivateUtilities.jl")
 include("restart.jl")
 include("Hydro.jl") # not a module to access same global space
+include("cosmology.jl")
 include("ParticleMesh.jl")
 
 println("You want to run this most likely from the shell as:")
 println(""" "julia --color=yes -i -e "using NoName; gp, gd, p = run_noname();" particle_mesh.conf" """)
-
 
 function noname()
     
@@ -55,8 +54,6 @@ function run_noname()
     for (arg,val) in parsed_args
         @info("  $arg  =>  $val")
     end
-    @info("Parsed Commandline")
-
 
     parseconf(string(NONAME_SRC_DIR,"/default.conf")) # load default parameters 
     @info("Read ", string(NONAME_SRC_DIR,"/default.conf"))
@@ -67,29 +64,24 @@ function run_noname()
     if isfile(user_conf_file)
         parseconf(user_conf_file)
         @info("Read ", user_conf_file)
-        for (k,v) in AppConf.conf
-            conf[k] = v
-        end
-
+        merge!(conf,AppConf.conf)
     end
 
     parseconf(parsed_args["configuration_file"]) # parse user config file
     @info("Parsed config files.")
-    for (k,v) in AppConf.conf
-        conf[k] = v
-    end
+    merge!(conf,AppConf.conf)
 
     # turn config file to variables (not for the faint of heart)
     dictionary_to_variable_names(:conf)
 
-    # restart? Then make sure to use restart as initializer
+    # restart? Then make sure to use restart as initializer routine
     if parsed_args["restart"]
         conf["Initializer"] = "restart"
     end
-
+        
     eval(parse(string("initializeRoutine=",conf["Initializer"])))
     eval(parse(string("evolveRoutine=",conf["Evolve"])))
-
+    
     done = false
     if haskey(conf,"ProfilingOn")
         if conf["ProfilingOn"]

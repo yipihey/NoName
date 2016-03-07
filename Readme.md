@@ -45,6 +45,7 @@ file.
 - [JLD](https://github.com/JuliaLang/JLD.jl)          restart functionality
 - [ArgParse](https://github.com/carlobaldassi/ArgParse.jl)     to parse commandline
 - [Cosmology](https://github.com/JuliaAstro/Cosmology.jl)    for cosmological comoving coordinates
+- [Roots](https://github.com/JuliaLang/Roots.jl)  for basic root finding
 - [NearestNeighbors](https://github.com/KristofferC/NearestNeighbors.jl)  for SPH and Friend of friends group finding
 
 
@@ -64,7 +65,8 @@ invocation `julia ../../src/noname.jl particle_mesh.conf`.
 The one on the command line has the last word. 
 
 ## Submodules and functionality
- [Input PowerSpectra](./doc/InputPowerSpectra.md)
+- [Input PowerSpectra](./doc/InputPowerSpectra.md)
+- [Cosmology](./doc/Cosmology.md)
 
 ## Parameters
 

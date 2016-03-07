@@ -43,15 +43,18 @@ function readyForOutput(c)
     # check for output based on NCycle
     if c["OutputEveryNCycle"] > 0 && mod(c["CurrentCycle"], c["OutputEveryNCycle"]) == 0
         output = true
-        c["LastOutputCycle"] = c["CurrentCycle"]
     end
     #check for Output based on time
     if c["OutputDtDataDump"] != 0 &&
-        abs(c["CurrentTime"]-c["LastOutputTime"]) < c["OutputDtDataDump"]
+        abs(c["CurrentTime"]-c["LastOutputTime"]) >= c["OutputDtDataDump"]
         output = true
-        c["LastOutputTime"] = c["CurrentTime"]
     end
-    @show output
+
+    if output
+        c["LastOutputTime"] = c["CurrentTime"]
+        c["LastOutputCycle"] = c["CurrentCycle"]
+    end
+    
     return output
 end
 
