@@ -806,8 +806,7 @@ function evolvePMCosmology(gp, gd, p)
         a = a_from_t_internal(cosmo, c["CurrentTime"] + 3.0*dt/2/2, zinit, zwherea1=zinit)
         drift(x,v,dt/2/a)
 
-        println("a: ", a)
-        
+       
         c["CurrentTime"] += dt
         c["CurrentRedshift"] = z_from_t_internal(cosmo, c["CurrentTime"], zinit)
 
