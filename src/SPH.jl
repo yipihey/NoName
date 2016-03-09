@@ -3,6 +3,7 @@
 
 using NearestNeighbors
 import NearestNeighbors.check_input
+using ParticleMesh
 
 """Cubic Spline Kernel popular in Smoothed Particles Hydrodynamics (1,2,3D form)
    call with
@@ -281,14 +282,20 @@ function evolveSPH(gp, gd, p)
     m = p["m"]
     rho = gd[1].d["ρD"]
 
-    pa = zeros(x)          # particle accelerations
+    φ = gd[1].d["Φ"]          # potential
+    acc   = zeros((3,g.dim...))
+    rt = rfft(φ) # initialize buffer for real-to complex transform
+
+    pa_grav = zeros(x)          # particle accelerations due to gravity
+    pa_sph = zeros(x)           # particle accelerations
     prho = zeros(Npart)    # particle densities
-    h = zeros(Npart)       #
+    h = zeros(Npart) 
     tree = KDTree(x,reorder=false) # construct tree for searching
     compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
     entropy = P./prho.^(GAMMA-1) # initialize entropy from Pressure
 
     dt = InitialDt
+    dx = 1. /maximum(g.dim) # smallest dx
 
     c["CurrentTime"] = c["StartTime"]
     c["CurrentCycle"] = c["StartCycle"]
@@ -312,11 +319,18 @@ function evolveSPH(gp, gd, p)
         c["CurrentCycle"] += 1
         println("dt:", dt)
 
-        SPH_accelerations_and_update_entropy(pa, P, entropy,
+        SPH_accelerations_and_update_entropy(pa_sph, P, entropy,
                                                      prho, h,
                                                      tree, m, Ngb, dt)
 
 
+        deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
+        rho_mean = mean(rho)
+        rho -= rho_mean # the total sum of the density needs to be zero for a periodic signal
+        compute_potential(φ, rho, rt)
+        compute_acceleration(acc, φ)
+        interpVecToPoints(pa_grav, acc, x, interpolation=ParticleBackInterpolation)
+        pa = pa_grav + pa_sph
         # LeapFrog step. Some codes combine the two drift steps
         drift(x,v,dt/2)
         kick(v,pa,dt)
