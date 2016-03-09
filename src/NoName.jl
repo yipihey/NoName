@@ -12,22 +12,23 @@ include("restart.jl")
 include("Hydro.jl") # not a module to access same global space
 include("cosmology.jl")
 include("ParticleMesh.jl")
+include("SPH.jl")
 
 println("You want to run this most likely from the shell as:")
 println(""" "julia --color=yes -i -e "using NoName; gp, gd, p = run_noname();" particle_mesh.conf" """)
 
 function noname()
-    
+
     @debug("in noname()")
     gp = Dict()    # we keep a hash table to keep track of grids
     gd = Dict()    # empty Dict to store Grid Data
     p  = Dict()    # empty Dict to store particle data
-    
-    # conf["Initializer"] 
+
+    # conf["Initializer"]
     initializeRoutine(gp,gd,p)
     @info("Finished Initializing.")
 
-    # conf["Evolve"] 
+    # conf["Evolve"]
     evolveRoutine(gp,gd,p)
     @info("Finished Evolve.")
 
@@ -55,7 +56,7 @@ function run_noname()
         @info("  $arg  =>  $val")
     end
 
-    parseconf(string(NONAME_SRC_DIR,"/default.conf")) # load default parameters 
+    parseconf(string(NONAME_SRC_DIR,"/default.conf")) # load default parameters
     @info("Read ", string(NONAME_SRC_DIR,"/default.conf"))
     global conf = copy(AppConf.conf)
 
@@ -78,17 +79,17 @@ function run_noname()
     if parsed_args["restart"]
         conf["Initializer"] = "restart"
     end
-        
+
     eval(parse(string("initializeRoutine=",conf["Initializer"])))
     eval(parse(string("evolveRoutine=",conf["Evolve"])))
-    
+
     done = false
     if haskey(conf,"ProfilingOn")
         if conf["ProfilingOn"]
             Profile.init(delay=0.01) # Initialize Profiler
             @profile gp, gd, p = noname()
             write_profiling_results(ProfilingResultsFile) # currently broken ...
-            @debug("Wrote Profiling Results file:", ProfilingResultsFile)    
+            @debug("Wrote Profiling Results file:", ProfilingResultsFile)
             done = true
         end
     end

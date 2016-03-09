@@ -3,7 +3,7 @@
 
 using NearestNeighbors
 import NearestNeighbors.check_input
-using ParticleMesh
+include("ParticleMesh.jl")
 
 """Cubic Spline Kernel popular in Smoothed Particles Hydrodynamics (1,2,3D form)
    call with
@@ -155,6 +155,23 @@ function compute_smoothing_lengths{T <: AbstractFloat}(h::AbstractArray{T},
     nothing
 end
 
+function initialize_velocities_sinusoidal(x,v)
+    Npart = size(x,2)
+    Nx = ParticleDimensions[1]
+    for i in 1:Npart
+        v[1,i] = sin(2pi/Nx * x[1,i]) # x velocity gets a sine wave
+    end
+    nothing
+end
+
+function UniformParticlesWaveVelocity(gp, gd, p)
+    initialize_particles_uniform(p["x"])
+    initialize_velocities_sinusoidal(p["x"], p["v"])
+
+    nothing
+end
+
+
 function compute_SPH_densities_and_h{T <: AbstractFloat}(rho::AbstractArray{T},
                                                          h::AbstractArray{T},
                                                          tree::KDTree{T},
@@ -289,7 +306,7 @@ function evolveSPH(gp, gd, p)
     pa_grav = zeros(x)          # particle accelerations due to gravity
     pa_sph = zeros(x)           # particle accelerations
     prho = zeros(Npart)    # particle densities
-    h = zeros(Npart) 
+    h = zeros(Npart)
     tree = KDTree(x,reorder=false) # construct tree for searching
     compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
     entropy = P./prho.^(GAMMA-1) # initialize entropy from Pressure
