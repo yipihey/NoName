@@ -16,7 +16,7 @@ function analyzePM(gp, gd, p)
     if isdefined(:cosmo)
         @info("CurrentRedshift:", c["CurrentRedshift"])
     end
-    
+
     on = c["CurrentOutputNumber"] # Since we are changing it cannot use shortcut
     s = @sprintf("%5.5i", on)
     newD = OutputDirectory
@@ -37,8 +37,8 @@ function analyzePM(gp, gd, p)
     fname = string(newD,"/",s,".h5")
     IOtools.grid_output(fname, gp, gd,overwrite=true)
     IOtools.particle_output(fname, p)
-    
-    
+
+
     # saving power spectrum
     fname = string(newD,"/",s,"_PS.png")
     karray, power = powerSpectrum(gp, gd, p)
@@ -47,25 +47,25 @@ function analyzePM(gp, gd, p)
     ylabel("P(k)")
     title("Power spectrum")
     savefig(fname)
-    close() 
+    close()
 end
 
 function InitializeParticleSimulation(gp, gd, p)
     @debug("InitializeDarkMatterSimulation: start.")
-    global const rank = sum([(i > 1) for i in TopgridDimensions]) # infer dimensionality 
+    global const rank = sum([(i > 1) for i in TopgridDimensions]) # infer dimensionality
     @info("Dimensions according to TopgridDimensions: ", rank)
-    
+
     Npart = prod(ParticleDimensions)
 
     # Create TopGrid
     dim =  (TopgridDimensions...)
-    gp[1] = GridPatch(DomainLeftEdge,DomainRightEdge,1,1, dim) 
+    gp[1] = GridPatch(DomainLeftEdge,DomainRightEdge,1,1, dim)
 
     gd[1] = GridData(Dict())
     d = gd[1]
-    
+
     # allocate our arrays for the grid quantities
-    d.d["ρD"]  = ones(gp[1].dim) # mass density 
+    d.d["ρD"]  = ones(gp[1].dim) # mass density
     d.d["Φ"]   = ones(gp[1].dim) # gravitational potential
 
     # allocate particles
@@ -91,17 +91,17 @@ function InitializeParticleSimulation(gp, gd, p)
                 conf["OmegaCDM"] = cosmo.Ω_m - conf["OmegaBaryon"]
             end
             p["m"] .*= conf["OmegaCDM"] # particles
-             
+
         else
             @warn("Specified Cosmology but gave no InitialRedshift! ")
             @warn("Proceed with caution ...")
         end
     end
-    
+
     # call Initializer given as ProblemDefinition in the .conf file
     eval(parse(string("initialvalues=",conf["ProblemDefinition"])))
-    
-    initialvalues(gp, gd, p)    
+
+    initialvalues(gp, gd, p)
 
     nothing
 end
@@ -109,7 +109,7 @@ end
 function UniformParticles(gp, gd, p)
 
     initialize_particles_uniform(p["x"])
-    
+
     nothing
 end
 
@@ -148,7 +148,7 @@ function PowerSpectrumParticles(gp, gd, p)
             ak = Float64(PSv * gauss[1]/k2)
             bk = Float64(PSv * gauss[2]/k2)
 #            println(k2,":", PSv)
-            if k2 > 0 
+            if k2 > 0
                 c[i,j,k] = (ak - im * bk)/2 * kf[dd]
             end
         end
@@ -164,7 +164,7 @@ function PowerSpectrumParticles(gp, gd, p)
         end
     end
     # Setup velocities : Still need to implement ...
-    
+
     nothing
 end
 
@@ -172,7 +172,7 @@ end
 function initialize_particles_uniform(x)
     rank = size(x,1)
     c=1
-    if rank==1 
+    if rank==1
         for i in 1:ParticleDimensions[1]
             x[i] = i
         end
@@ -193,7 +193,7 @@ function initialize_particles_uniform(x)
                     x[1,c] = i
                     x[2,c] = j
                     x[3,c] = k
-                    c += 1 
+                    c += 1
                 end
             end
         end
@@ -206,7 +206,7 @@ function deposit(rho,x,m; interpolation="none")
     for i in eachindex(rho)
         rho[i] = 0.
     end
-    
+
     if interpolation == "none"
         ngpdensity(rho,x,m)
     elseif interpolation == "cic"
@@ -215,7 +215,7 @@ function deposit(rho,x,m; interpolation="none")
         sicdensity(rho,x,m)
     end
 
-    
+
 end
 
 function sic_interp_1d(pa, a, x)
@@ -229,7 +229,7 @@ function sic_interp_1d(pa, a, x)
         cx = x[n]
         inext = i + delt
         xnext = inext/Ngl
-        cdx = 
+        cdx =
         dxe = abs(x[n+1]-x[n])
         ip1 = (i == Ngl) ? 1 : i+1
         ip1 = (i == 1) ? 1 : i+1
@@ -243,7 +243,7 @@ function ngpdensity(rho,x,m)
     Nglx = convert(Float64,TopgridDimensions[1])
     Ngly = convert(Float64,TopgridDimensions[2])
     Nglz = convert(Float64,TopgridDimensions[3])
-    
+
     if rank == 1
         for i in 1:size(x,2)
             ii = floor(Int64,x[1,i]*Nglx)+1
@@ -352,7 +352,7 @@ function potential_1d(phi,rho,rt)
     rt[1] = 0. # make sure singularity is zero
     phi[:] = irfft(rt,size(rho,1)) .* 1/Nglx^2
     nothing
-    
+
 end
 
 
@@ -381,7 +381,7 @@ function potential_2d(phi,rho,rt)
     rt[1,1] = 0. # make sure singularity is zero
     phi[:] = irfft(rt,size(rho,1)) .* 1/Nglx^2
     nothing
-    
+
 end
 
 
@@ -390,7 +390,7 @@ function potential_3d(phi,rho,rt)
     Nglx = TopgridDimensions[1]
     Ngly = TopgridDimensions[2]
     Nglz = TopgridDimensions[3]
-    
+
     Ngl2y = round(Int64, Ngly/2)
     Ngl2z = round(Int64, Nglz/2)
 
@@ -407,7 +407,7 @@ function potential_3d(phi,rho,rt)
             end
             for i in 1:size(rt,1)
                 kx = 2pi*(i-1)/Nglx
-                Ginv = -4.*(sin(kx/2)^2+sin(ky/2)^2+sin(kz/2)^2) # unnormalized   Ginv = -(kx^2+ky^2+kz^2) 
+                Ginv = -4.*(sin(kx/2)^2+sin(ky/2)^2+sin(kz/2)^2) # unnormalized   Ginv = -(kx^2+ky^2+kz^2)
                 if !(Ginv == 0.0)
                     rt[i,j,k] /= Ginv
                 end
@@ -417,7 +417,7 @@ function potential_3d(phi,rho,rt)
     rt[1,1,1] = 0. # make sure singularity is zero
     phi[:] = irfft(rt,size(rho,1)) .* 1/Nglx^2 # not tested for non cubic grids
     nothing
-    
+
 end
 
 function deriv1(xd, x)
@@ -502,7 +502,7 @@ function deriv2_1d(x)
         im1 = (i == 1) ? Ngl : i-1
         xd[i] = x[ip1] + x[im1] - 2*x[i]
     end
-    xd*Ngl^2 # 
+    xd*Ngl^2 #
 end
 
 function deriv2_2d(x)
@@ -516,7 +516,7 @@ function deriv2_2d(x)
             xd[i,j] = x[ip1,j] + x[im1,j] + x[i,jp1] + x[i,jm1] - 4*x[i,j]
         end
     end
-    xd*Ngl^2 # 
+    xd*Ngl^2 #
 end
 
 function deriv2_3d(x)
@@ -568,9 +568,9 @@ function interpVecToPoints(pa, a, x; interpolation="none")
             cic_interp_3d(pa, a, x)
         end
     end
-    nothing    
+    nothing
 end
-    
+
 function cic_interp_1d(pa, a, x)
     for n in eachindex(x)
         i = floor(Int64,x[n]*Ngl)+1
@@ -604,7 +604,7 @@ function cic_interp_3d(pa, a, x)
     Ng1 = size(a,2)
     Ng2 = size(a,3)
     Ng3 = size(a,4)
-    
+
     for n in 1:size(x,2)
         i = floor(Int64,x[1,n]*Ng1)+1
         ip1 = (i == Ng1) ? 1 : i+1
@@ -616,13 +616,13 @@ function cic_interp_3d(pa, a, x)
         kp1 = (k == Ng3) ? 1 : k+1
         dz = x[3,n]*Ng3-k+1
         for m in 1:3
-            @inbounds pa[m,n] = (a[m,i,j,k]*(1.-dx)*(1.-dy)*(1.-dz) + 
+            @inbounds pa[m,n] = (a[m,i,j,k]*(1.-dx)*(1.-dy)*(1.-dz) +
                                  a[m,ip1,j,k]*dx*(1.-dy)*(1.-dz) +
-                                 a[m,i,jp1,k]*(1.-dx)*dy*(1.-dz) + 
-                                 a[m,ip1,jp1,k]*dx*dy*(1.-dz) +       
-                                 a[m,i,j,kp1]*(1.-dx)*(1.-dy)*dz + 
-                                 a[m,ip1,j,kp1]*dx*(1.-dy)*dz +    
-                                 a[m,i,jp1,kp1]*(1.-dx)*dy*dz +    
+                                 a[m,i,jp1,k]*(1.-dx)*dy*(1.-dz) +
+                                 a[m,ip1,jp1,k]*dx*dy*(1.-dz) +
+                                 a[m,i,j,kp1]*(1.-dx)*(1.-dy)*dz +
+                                 a[m,ip1,j,kp1]*dx*(1.-dy)*dz +
+                                 a[m,i,jp1,kp1]*(1.-dx)*dy*dz +
             a[m,ip1,jp1,kp1]*dx*dy*dz)
         end
     end
@@ -675,17 +675,17 @@ function evolvePM(gp, gd, p)
     rho = gd[1].d["ρD"]
 
     φ = gd[1].d["Φ"]          # potential
-    acc   = zeros((3,g.dim...)) 
-    
+    acc   = zeros((3,g.dim...))
+
     pa = zeros(x)          # particle accelerations
     rt = rfft(φ) # initialize buffer for real-to complex transform
 
     dx = 1. /maximum(g.dim) # smallest dx
     dt = InitialDt
-    
+
     c["CurrentTime"] = c["StartTime"]
     c["CurrentCycle"] = c["StartCycle"]
-    
+
     while c["CurrentTime"] < StopTime && c["CurrentCycle"] < StopCycle
         make_periodic(x)
         deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
@@ -696,7 +696,7 @@ function evolvePM(gp, gd, p)
         interpVecToPoints(pa, acc, x, interpolation=ParticleBackInterpolation)
 
         # LeapFrog step. Some codes combine the two drift steps,
-        # but then need to worry about x and v being known at different times. 
+        # but then need to worry about x and v being known at different times.
         drift(x,v,dt/2)
         kick(v,pa,dt)
         drift(x,v,dt/2)
@@ -705,7 +705,7 @@ function evolvePM(gp, gd, p)
 
         dt = CourantFactor*dx/maximum(abs(v)+1e-30)
         dt = minimum([dt, MaximumDt])
-        
+
         if ((c["CurrentTime"]+dt) > c["StopTime"] )
             dt = (1. + 1e-15)*(c["StopTime"] - c["CurrentTime"])
             println("final dt = ", dt)
@@ -732,14 +732,14 @@ function powerSpectrum(gp, gd, p)
     delta = rho/rho_mean - 1 # density fluctuation
 
     deltak2 = abs(fft(delta)).^2 * prod(box) / prod(dims)^2
-    
+
     dk = 2pi / maximum(dims) # bin width
     #println("dk", dk)
     lenk = round(Int, maximum(dims)/2) # k array length
     karray = collect(1:lenk) * dk # k array
     power = zeros(lenk) # power spectrum
     counts = zeros(lenk) # array to keep counts
-    # we first add up power for each bin, then divide by counts 
+    # we first add up power for each bin, then divide by counts
     for k in 1:dims[3], j in 1:dims[2], i in 1:dims[1]
         kf = fftfreq([i,j,k], dims)
         ka = sqrt(dot(kf,kf))
@@ -750,7 +750,7 @@ function powerSpectrum(gp, gd, p)
             counts[n] += 1
         end
     end # END looping over all frequencies
-    
+
     power = power./counts
 
     karray, power
@@ -770,21 +770,21 @@ function evolvePMCosmology(gp, gd, p)
     m = p["m"]
     rho = gd[1].d["ρD"]
     φ = gd[1].d["Φ"]          # potential
-    acc   = zeros((3,g.dim...)) 
+    acc   = zeros((3,g.dim...))
     a = 1.0
     ȧ = 0.0
-    
+
     pa = zeros(x)          # particle accelerations
     rt = rfft(φ) # initialize buffer for real-to complex transform
 
     dx = 1. /maximum(g.dim) # smallest dx
     dt = InitialDt
     zinit = conf["InitialRedshift"]
-    
+
     c["CurrentTime"]  = c["StartTime"]
     c["CurrentCycle"] = c["StartCycle"]
 
-    
+
     while c["CurrentTime"] < c["StopTime"] && c["CurrentCycle"] < c["StopCycle"]
         make_periodic(x)
         deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
@@ -795,9 +795,9 @@ function evolvePMCosmology(gp, gd, p)
 
         a = a_from_t_internal(cosmo, c["CurrentTime"]+dt/2, zinit, zwherea1=zinit)
         ȧ = dadt(cosmo, a, zwherea1=zinit)
-        
+
         # LeapFrog step. Some codes combine the two drift steps,
-        # but then need to worry about x and v being known at different times. 
+        # but then need to worry about x and v being known at different times.
         a = a_from_t_internal(cosmo, c["CurrentTime"] + dt/2/2, zinit, zwherea1=zinit)
         drift(x,v,dt/2/a)
         a = a_from_t_internal(cosmo, c["CurrentTime"] + dt, zinit, zwherea1=zinit)
@@ -806,14 +806,14 @@ function evolvePMCosmology(gp, gd, p)
         a = a_from_t_internal(cosmo, c["CurrentTime"] + 3.0*dt/2/2, zinit, zwherea1=zinit)
         drift(x,v,dt/2/a)
 
-       
+
         c["CurrentTime"] += dt
         c["CurrentRedshift"] = z_from_t_internal(cosmo, c["CurrentTime"], zinit)
 
         dt = CourantFactor*dx/maximum(abs(v)+1e-30)
         dtFrac = DtFractionOfTime*c["CurrentTime"]
         dt = min(dt, dtFrac, MaximumDt)
-        
+
         if ((c["CurrentTime"]+dt) > c["StopTime"] )
             dt = (1. + 1e-6)*(c["StopTime"] - c["CurrentTime"])
             println("final dt = ", dt)

@@ -25,14 +25,14 @@ const SPH_default_dim=2
 end
 # test normalization
 # x = collect(1:10000)/10000
-# sum(SPH.W(x,1.,ndim=1) *      diff(x)[1])  # should come out to 1 
+# sum(SPH.W(x,1.,ndim=1) *      diff(x)[1])  # should come out to 1
 # sum(SPH.W(x,1.,ndim=2).* x   *diff(x)[1]*2pi)
 # sum(SPH.W(x,1.,ndim=3).*x.^2 *(diff(x)[1])*4pi)
 W{T<:Real}(r::Vector{T}, h::T;ndim=SPH_default_dim)  = [W(r[i],h,ndim=ndim) for i in eachindex(r)]
 
 
 """ Derivative of cubic spline kernel
-       
+
        dw ij = dW(r,h, ndim=3)
 
        ndim can be 1,2 and 3
@@ -65,7 +65,7 @@ using NearestNeighbors
        The shortest distance to a point or one of its periodic images is
        calculated.
        So
-       
+
        x = ones(3,4) \n
        y = zeros(3,4) \n
        periodic_euclidean(x,y)\n
@@ -76,7 +76,7 @@ using NearestNeighbors
        0.0
        0.0
 
-       Since [0,0,0] is equal to [1,1,1] in a periodic lattice. 
+       Since [0,0,0] is equal to [1,1,1] in a periodic lattice.
        """
 function periodic_euclidean(a::AbstractArray, b::AbstractArray)
     ld = abs(b .- a)
@@ -91,7 +91,7 @@ function periodic_euclidean(a::AbstractArray, b::AbstractArray)
     end
     res
 end
-    
+
 type PeriodicEuclidean <: Metric  end
 
 " Find the periodic images we may want to check with the tree"
@@ -106,7 +106,7 @@ function periodic_images{T <: AbstractFloat}(p::AbstractArray{T})
     ni = zeros(p)
     for m in 1:2^ndim
         bity = digits(m-1,2,ndim)
-        for i in 1:ndim 
+        for i in 1:ndim
             res[i,m] = n[i,bity[i]+1]
         end
     end
@@ -119,12 +119,12 @@ function findN_NN{T <: AbstractFloat}(tree::KDTree{T}, points::AbstractArray{T},
     @assert tree.reordered==false
     idxs,dists = knn(tree,points, k, true) # returns sorted
     # if the farthest point si far enoguh to cross box edge also check
-    # the periodic images within a search radius equal to that. 
+    # the periodic images within a search radius equal to that.
     if periodic
         l = 1.*dists[end]
         npt = periodic_images(points)
         nid = idxs
-        for i in 2:size(npt,2) # the first (original point) is already done 
+        for i in 2:size(npt,2) # the first (original point) is already done
             append!(nid, inrange(tree, npt[:,i], l, false))
         end
         dists = periodic_euclidean(tree.data[:,nid], points)
@@ -157,7 +157,7 @@ end
 function compute_SPH_densities_and_h{T <: AbstractFloat}(rho::AbstractArray{T},
                                                          h::AbstractArray{T},
                                                          tree::KDTree{T},
-                                                         m, 
+                                                         m,
                                                          Nnghb)
     @assert size(m,1) == 1
     ndim = size(tree.data,1)
@@ -170,14 +170,14 @@ function compute_SPH_densities_and_h{T <: AbstractFloat}(rho::AbstractArray{T},
             rho[i] += m*W(dists[j],h[i],ndim=ndim)
         end
     end
-    
+
     nothing
 end
 
 function compute_SPH_densities{T <: AbstractFloat}(rho::AbstractArray{T},
                                                    x::AbstractArray{T},
                                                    tree::KDTree{T},
-                                                   m, 
+                                                   m,
                                                    Nnghb)
 #    @assert size(m,1) == 1
 #    @assert size(tree.data,1) = size(x,1)
@@ -191,7 +191,7 @@ function compute_SPH_densities{T <: AbstractFloat}(rho::AbstractArray{T},
             rho[i] += m*W(dists[j],h[i],ndim=ndim)
         end
     end
-    
+
     nothing
 end
 
@@ -200,7 +200,7 @@ function compute_SPH_pressures(P,rho,entropy)
     # isothermal equation of state hardcoded for now
 
     for i in eachindex(rho)
-        P[i] = entropy[i]*rho[i]^(GAMMA-1) 
+        P[i] = entropy[i]*rho[i]^(GAMMA-1)
     end
 end
 
@@ -223,9 +223,9 @@ function SPH_accelerations_and_update_entropy(a,
     for i in 1:np
         dtEntropy = 0.
         id, dists = findN_NN(tree, tree.data[:,i], Nnghb,periodic=true)
-        
+
         a[:,i] = 0.
-        p_over_rho2_i = P[i]/rho[i]^2 
+        p_over_rho2_i = P[i]/rho[i]^2
         soundspeed_i = soundspeed(P[i], rho[i])
         for k in 2:Nnghb
             j = id[k]
@@ -261,7 +261,7 @@ function SPH_accelerations_and_update_entropy(a,
             hfc = hfc_visc + m*(p_over_rho2_i*dW_i+P[j]/rho[j]^2*dW_j)/r
 
             for dim in 1:ndim
-                a[dim,i] -= hfc*dx[dim] 
+                a[dim,i] -= hfc*dx[dim]
             end
 
 
@@ -281,7 +281,7 @@ function evolveSPH(x,v,P,m,dtin,tfinal; tout=-1)
     tree = KDTree(x,reorder=false) # construct tree for searching
     compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
     entropy = P./prho.^(GAMMA-1) # initialize entropy from Pressure
-    
+
     dt = dtin
     ttime = 0.
 
@@ -300,13 +300,13 @@ function evolveSPH(x,v,P,m,dtin,tfinal; tout=-1)
             println("final dt", dt)
         end
         println("dt:", dt)
-        
+
         SPH_accelerations_and_update_entropy(pa, P, entropy,
                                                      prho, h,
                                                      tree, m, Ngb, dt)
 
 
-        # LeapFrog step. Some codes combine the two drift steps 
+        # LeapFrog step. Some codes combine the two drift steps
         drift(x,v,dt/2)
         kick(v,pa,dt)
         drift(x,v,dt/2)
