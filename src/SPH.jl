@@ -12,6 +12,7 @@ include("ParticleMesh.jl")
    where r is the (scalar) distance and h the smoothing length
 """
 const SPH_default_dim=2
+const GAMMA = 5./3  # default adiabatic index
 
 @inline function W{T<:Real}(r::T,h::T;ndim=SPH_default_dim)
     const norm = [4./3., 40/7pi, 8/pi]
@@ -159,7 +160,7 @@ function initialize_velocities_sinusoidal(x,v)
     Npart = size(x,2)
     Nx = ParticleDimensions[1]
     for i in 1:Npart
-        v[1,i] = sin(2pi/Nx * x[1,i]) # x velocity gets a sine wave
+        v[1,i] = .05 * sin(2pi * x[1,i]) # x velocity gets a sine wave and x is between [0,1]
     end
     nothing
 end
@@ -228,6 +229,7 @@ end
 
 
 function SPH_accelerations_and_update_entropy(a,
+                                              v,
                                               P,
                                               entropy,
                                               rho,
@@ -235,6 +237,9 @@ function SPH_accelerations_and_update_entropy(a,
                                               tree,
                                               m, Nnghb, dt    )
     @assert size(m,1) == 1
+    ArtBulkViscConst = 1
+    ArtBulkViscConstB = 2
+
     ndim = size(tree.data,1)
     np = size(tree.data,2)
     dx = zeros(ndim)
@@ -292,6 +297,7 @@ end
 
 
 function evolveSPH(gp, gd, p)
+    c = conf
 
     g = gp[1] # only supporting one grid patch for now
     x = p["x"]
@@ -303,10 +309,15 @@ function evolveSPH(gp, gd, p)
     acc   = zeros((3,g.dim...))
     rt = rfft(φ) # initialize buffer for real-to complex transform
 
+    Ngb  = 32                   # hard coded from previous example
+    Npart = size(x,2)
     pa_grav = zeros(x)          # particle accelerations due to gravity
     pa_sph = zeros(x)           # particle accelerations
+    pa = zeros(x)
     prho = zeros(Npart)    # particle densities
     h = zeros(Npart)
+    P = ones(prho)               # TODO: check this is okay
+
     tree = KDTree(x,reorder=false) # construct tree for searching
     compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
     entropy = P./prho.^(GAMMA-1) # initialize entropy from Pressure
@@ -323,7 +334,7 @@ function evolveSPH(gp, gd, p)
         compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
         compute_SPH_pressures(P,prho,entropy)
 
-        cs = maximum(soundspeed(P,prho))
+        cs = maximum(abs(soundspeed(P,prho)))
         vm = maximum(abs(v))
         # conservative new timestep
         dt = CourantFactor*dx/(cs + vm)
@@ -336,7 +347,7 @@ function evolveSPH(gp, gd, p)
         c["CurrentCycle"] += 1
         println("dt:", dt)
 
-        SPH_accelerations_and_update_entropy(pa_sph, P, entropy,
+        SPH_accelerations_and_update_entropy(pa_sph, v, P, entropy,
                                                      prho, h,
                                                      tree, m, Ngb, dt)
 
@@ -352,14 +363,9 @@ function evolveSPH(gp, gd, p)
         drift(x,v,dt/2)
         kick(v,pa,dt)
         drift(x,v,dt/2)
-
-        ttime += dt
     end
 
 
-    if debug
-        println("Evolved to time:", ttime)
-    end
     prho, h, P, pa, entropy
 end
 
@@ -387,7 +393,6 @@ function sph_particle_output(fname, x, v, rho, P; overwrite=false)
 end
 
 
-#const GAMMA = 5./3  # default adiabatic index
 #using PyPlot
 
 
