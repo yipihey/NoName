@@ -273,7 +273,13 @@ function SPH_accelerations_and_update_entropy(a,
 end
 
 
-function evolveSPH(x,v,P,m,dtin,tfinal; tout=-1)
+function evolveSPH(gp, gd, p)
+
+    g = gp[1] # only supporting one grid patch for now
+    x = p["x"]
+    v = p["v"]
+    m = p["m"]
+    rho = gd[1].d["ρD"]
 
     pa = zeros(x)          # particle accelerations
     prho = zeros(Npart)    # particle densities
@@ -282,23 +288,28 @@ function evolveSPH(x,v,P,m,dtin,tfinal; tout=-1)
     compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
     entropy = P./prho.^(GAMMA-1) # initialize entropy from Pressure
 
-    dt = dtin
-    ttime = 0.
+    dt = InitialDt
 
-    while ttime < tfinal
+    c["CurrentTime"] = c["StartTime"]
+    c["CurrentCycle"] = c["StartCycle"]
+
+    while c["CurrentTime"] < StopTime && c["CurrentCycle"] < StopCycle
         make_periodic(x)
         tree = KDTree(x,reorder=false) # construct tree for searching
         compute_SPH_densities_and_h(prho, h, tree, m, Ngb)
         compute_SPH_pressures(P,prho,entropy)
 
         cs = maximum(soundspeed(P,prho))
-        vm = maximum(v)
+        vm = maximum(abs(v))
         # conservative new timestep
-        dt = 0.1*minimum(h)/(cs+vm)
-        if ((ttime+dt) > tfinal )
-            dt = 1.0001*(tfinal - ttime)
-            println("final dt", dt)
+        dt = CourantFactor*dx/(cs + vm)
+        dt = minimum([dt, MaximumDt])
+        c["CurrentTime"] += dt
+        if ((c["CurrentTime"]+dt) > c["StopTime"] )
+            dt = (1. + 1e-15)*(c["StopTime"] - c["CurrentTime"])
+            println("final dt = ", dt)
         end
+        c["CurrentCycle"] += 1
         println("dt:", dt)
 
         SPH_accelerations_and_update_entropy(pa, P, entropy,
