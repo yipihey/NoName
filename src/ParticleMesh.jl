@@ -131,6 +131,7 @@ function PowerSpectrumParticles(gp, gd, p)
 
     x = p["x"]
     initialize_particles_uniform(x)
+    initialize_velocities_sinusoidal(x, p["v"])
 
     rank = size(x,1)
     dims = conf["ParticleDimensions"]

@@ -160,7 +160,7 @@ function initialize_velocities_sinusoidal(x,v)
     Npart = size(x,2)
     Nx = ParticleDimensions[1]
     for i in 1:Npart
-        v[1,i] = .05 * sin(2pi * x[1,i]) # x velocity gets a sine wave and x is between [0,1]
+        v[1,i] = 2 * sin(2pi * x[1,i]) # x velocity gets a sine wave and x is between [0,1]
     end
     nothing
 end
