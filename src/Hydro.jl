@@ -38,13 +38,13 @@ function SolveHydroEquations!(gp, gd, p, dt)
     FF = zeros(Neq, Ngl[1]+1,Ngl[2],Ngl[3])
     GG = zeros(Neq, Ngl[1],Ngl[2]+1,Ngl[3])
     HH = zeros(Neq, Ngl[1],Ngl[2],Ngl[3]+1)
-    
+
     HLL_fluxes(FF, GG, HH, U, gd)
- 
+
     update_dUF(dUF,FF) # don't do the 1./dx here.. : equ(3)
     update_dUG(dUG,GG)
     update_dUH(dUH,HH)
-    
+
     dx = [(g.RE[i]-g.LE[i])/g.dim[i] for i in 1:3]
     update_U(U, dUF,dUG,dUH, dx, dt)
 
@@ -78,7 +78,7 @@ end
 
 function update_dUG(dUG,GG)
     for j=1:size(dUG,3), n=1:size(dUG,1)
-        dUG[n,:,j,:] = -(GG[n,:,j+1,:] - GG[n,:,j,:]) 
+        dUG[n,:,j,:] = -(GG[n,:,j+1,:] - GG[n,:,j,:])
     end
     nothing
 end
@@ -114,7 +114,7 @@ function HLL_fluxes(FF, GG, HH, U, gd)
 
 
     # calculate P and cs
-    v2 = zeros(1,Ngl...) ## note the weird indexing here.... for easier algebra with U 
+    v2 = zeros(1,Ngl...) ## note the weird indexing here.... for easier algebra with U
     v2[1,:,:,:] = d.d["V₁"].^2 + d.d["V₂"].^2 + d.d["V₃"].^2
     if DualEnergyFormalism
         ε = d.d["ε"]
@@ -131,7 +131,7 @@ function HLL_fluxes(FF, GG, HH, U, gd)
 
     # create left and right fluxes
     LR_fluxes(FL,FR, GL,GR, HL,HR, U, gd, P)
-    
+
 
     # create HLL fluxes, FF, GG, HH
     for n=1:size(FF,1), j=1:size(FF,2)
@@ -184,7 +184,7 @@ function HLL_fluxes(FF, GG, HH, U, gd)
 end
 
 function LR_states(UL_F,UR_F,UL_G,UR_G,UL_H,UR_H, U)
-    # piecewise constant 
+    # piecewise constant
     Ngl = size(U)[2:end]
     Neq = size(U)[1]
     for n=1:Neq
@@ -209,7 +209,7 @@ function LR_states(UL_F,UR_F,UL_G,UR_G,UL_H,UR_H, U)
 end
 
 function LR_fluxes(FL,FR, GL,GR, HL,HR, U, gd, P)
-    # piecewise constant 
+    # piecewise constant
     d = gd[1]
     Ngl = size(U)[2:end]
     Neq = size(U)[1]
@@ -220,7 +220,7 @@ function LR_fluxes(FL,FR, GL,GR, HL,HR, U, gd, P)
     V₂[1,:,:,:] = d.d["V₂"]
     V₃[1,:,:,:] = d.d["V₃"]
 
-    
+
     for i=1:size(FL,2)
             FL[1,i,:,:] = U[3,mod1(i-1,end),:,:]
             FR[1,i,:,:] = U[3,mod1(i,end),:,:]
@@ -261,7 +261,7 @@ function LR_fluxes(FL,FR, GL,GR, HL,HR, U, gd, P)
 end
 
 function ComputeHydroTimeStep(gp, gd, p)
-    # calculate P and cs 
+    # calculate P and cs
     d = gd[1]
     g = gp[1]
     Ngl = size(d.d["ρ"])
@@ -285,20 +285,20 @@ function ComputeHydroTimeStep(gp, gd, p)
 end
 
 function InitializeHydroSimulation(gp, gd, p)
-    
-    global const rank = sum([(i > 1) for i in TopgridDimensions]) # infer dimensionality 
+
+    global const rank = sum([(i > 1) for i in TopgridDimensions]) # infer dimensionality
     global const eos = EOS(γ)
     if verbose
         println("Dimensions according to TopgridDimensions: ", rank)
     end
-    
+
     # Create TopGrid
     dim =  ntuple((i) -> TopgridDimensions[i], length(TopgridDimensions))
-    g = gp[1] = GridPatch(DomainLeftEdge,DomainRightEdge,1,1, dim) 
+    g = gp[1] = GridPatch(DomainLeftEdge,DomainRightEdge,1,1, dim)
 
     gd[1] = GridData(Dict())
     d = gd[1]
-    
+
     # allocate our arrays for the hydro quantities
     d.d["ρ"]  = ones(g.dim)
     d.d["E"]  = ones(g.dim)
@@ -309,8 +309,8 @@ function InitializeHydroSimulation(gp, gd, p)
     d.d["V₂"] = zeros(g.dim)
     d.d["V₃"] = zeros(g.dim)
 
-    ρ  = d.d["ρ"] 
-    E  = d.d["E"] 
+    ρ  = d.d["ρ"]
+    E  = d.d["E"]
     V₁ = d.d["V₁"]
     V₂ = d.d["V₂"]
     V₃ = d.d["V₃"]
@@ -322,7 +322,7 @@ function InitializeHydroSimulation(gp, gd, p)
      # call Initializer given as ProblemDefinition in the .conf file
     callsig = string("initialvalues=",conf["ProblemDefinition"])
     eval(parse(callsig)) # call the correct routine
-   
+
     for k in 1:size(ρ,3)
         for j in 1:size(ρ,2)
             for i in 1:size(ρ,1)
@@ -337,7 +337,7 @@ function InitializeHydroSimulation(gp, gd, p)
             end
         end
     end
-    
+
     nothing
 end
 
@@ -372,10 +372,10 @@ function SodShocktube(x)
     V₃ = 0
     if x[1] < 0.5
         ρ = ρl
-        E = ε_from_P(Pl, ρ, eos) + 0.5*(V₁^2+V₂^2+V₃^2) 
+        E = ε_from_P(Pl, ρ, eos) + 0.5*(V₁^2+V₂^2+V₃^2)
     else
         ρ = ρr
-        E = ε_from_P(Pr, ρ, eos) + 0.5*(V₁^2+V₂^2+V₃^2) 
+        E = ε_from_P(Pr, ρ, eos) + 0.5*(V₁^2+V₂^2+V₃^2)
     end
     ρ, E, V₁, V₂, V₃
 end
