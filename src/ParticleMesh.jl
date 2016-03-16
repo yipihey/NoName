@@ -13,7 +13,8 @@ function analyzePM(gp, gd, p)
     end
 
     @info("Output:", c["CurrentOutputNumber"], ": CurrentTime:", c["CurrentTime"])
-    if isdefined(:cosmo)
+    @info("CurrentCycle:", c["CurrentCycle"])
+    if isdefined(NoName,:cosmo)
         @info("CurrentRedshift:", c["CurrentRedshift"])
     end
     
@@ -42,6 +43,7 @@ function analyzePM(gp, gd, p)
     # saving power spectrum
     fname = string(newD,"/",s,"_PS.png")
     karray, power = powerSpectrum(gp, gd, p)
+    pygui(false)
     loglog(karray, power)
     xlabel("k")
     ylabel("P(k)")
@@ -168,6 +170,67 @@ function PowerSpectrumParticles(gp, gd, p)
     nothing
 end
 
+
+function Transfer(kh,pk,m)
+    a = 0.049*m^-0.83 # m in keV unit
+    nu = 1.12
+    return pk.*(1+(a.*kh).^(2*nu)).^(-10/nu)
+end
+
+
+function PowerSpectrumParticlesCAMB(gp, gd, p)
+
+    # Initialize a PowerSpectrum if requested
+    x = p["x"]
+    initialize_particles_uniform(x)
+    kh = readdlm("khz20.dat")
+    pk = readdlm("pkz20.dat")
+    kh *= 2pi
+    if isdefined(NoName,:DMmass)
+        pk = Transfer(kh,pk,DMmass)
+    end
+
+    rank = size(x,1)
+    dims = conf["ParticleDimensions"]
+    ndims = copy(dims)
+    ndims[1] = div(dims[1],2)+1
+    c = zeros(Complex{Float64},ndims...) #
+    Si = zeros(Float64, (rank, (dims[dims .> 1])...))
+    for dd in 1:rank
+        for k in 1:dims[3], j in 1:dims[2], i in 1:ndims[1]
+            kf = fftfreq([i,j,k], dims)
+            k2 = dot(kf,kf)
+            ka = sqrt(k2)
+            if ka <= 1e-6
+                continue
+            end
+            idx = findfirst(x->x>ka,kh)
+
+            interp = (ka-kh[idx-1])/(kh[idx]-kh[idx-1])
+            PSv = pk[idx-1]+interp*(pk[idx]-pk[idx-1])
+            gauss = randn(2)
+            ak = Float64(PSv * gauss[1]/k2)
+            bk = Float64(PSv * gauss[2]/k2)
+#            println(k2,":", PSv)
+            if k2 > 0 
+                c[i,j,k] = (ak - im * bk)/2 * kf[dd]
+            end
+        end
+        println(summary(c))
+        Si[dd,:] = irfft(squeeze(c), dims[1])
+#        @show size(Si)
+    end
+
+    # Apply displacement field
+    for i in 1:size(x,2)5
+        for dd in 1:rank
+            x[dd,i] += Si[dd,i]
+        end
+    end
+    # Setup velocities : Still need to implement ...
+    
+    nothing
+end
 
 function initialize_particles_uniform(x)
     rank = size(x,1)
@@ -788,8 +851,9 @@ function evolvePMCosmology(gp, gd, p)
     while c["CurrentTime"] < c["StopTime"] && c["CurrentCycle"] < c["StopCycle"]
         make_periodic(x)
         deposit(rho,x,m,interpolation=ParticleDepositInterpolation)
-
-        compute_potential(φ, rho .- mean(rho), rt)
+        a = a_from_t_internal(cosmo, c["CurrentTime"], zinit, zwherea1=zinit)
+        #compute_potential(φ, rho .- mean(rho), rt)
+        compute_potential(φ, (rho .- mean(rho))/a, rt)
         compute_acceleration(acc, φ)
         interpVecToPoints(pa, acc, x, interpolation=ParticleBackInterpolation)
 
