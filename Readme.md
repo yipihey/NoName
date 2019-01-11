@@ -13,23 +13,25 @@ scale features of the spectra. We argue that careful comparison of the actual
 observation and simulation can give us a lower bound on the dark matter mass.
 <br>
 <br>
-More details of the work can be found in [final report](report.pdf)
+More details of the work can be found in [final report](report.pdf).
 
-
+<br>
+<br>
 | ![alt text](figsim.png "evolution") |
 |:--:| 
 | The sample numerical simulation of dark matter and ordinary matter(baryon) distribution.|
 
-From top to bottom, we show how dark matter and ordinary matter distribution evolves in time 
+In the figure above, from top to bottom, we show how dark matter and ordinary matter distribution evolves in time 
 by gravity and hydrodynamical pressure. 
 The left two columns are for `mass = 100 GeV` (cold dark matter), and the right two columns 
 are for `mass = 100 keV` (warm dark matter). For each mass, images in the left column show the evolution of
 dark matter distributions, and those in the right column show the evolution of ordinary matter. From
 the top to bottom, the corresponding redshifts are `z = 11.42, 6.83, 4.97, 3.92` (high `z` means more in the past).
 Note that although ordinary matter started with uniform distribution, they quickly fall into the
-potential well of dark matter. |
+potential well of dark matter. 
 
-
+<br>
+<br>
 | ![alt text](figlymansim.png "simulated") |
 |:--:| 
 | The simulated Lyman-alpha forest spectra |
