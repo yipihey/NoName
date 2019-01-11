@@ -15,6 +15,8 @@ observation and simulation can give us a lower bound on the dark matter mass.
 More details of the work can be found in [final report](report.pdf).
 
 
+## Sample Plots
+
 | ![alt text](figsim.png "evolution") |
 |:--:| 
 | The sample numerical simulation of dark matter and ordinary matter(baryon) distribution.|
@@ -27,6 +29,8 @@ dark matter distributions, and those in the right column show the evolution of o
 the top to bottom, the corresponding redshifts are `z = 11.42, 6.83, 4.97, 3.92` (high `z` means more in the past).
 Note that although ordinary matter started with uniform distribution, they quickly fall into the
 potential well of dark matter. 
+
+<br/>
 
 
 | ![alt text](figlymansim.png "simulated") |
