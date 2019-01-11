@@ -40,8 +40,8 @@ potential well of dark matter.
 
 
 ## Note
-It is built upon the original `[NoName](https://github.com/yipihey/NoName)` repository 
+It is built upon the original [`NoName`](https://github.com/yipihey/NoName) repository 
 by [Tom Abel](http://tomabel.org/) which provides an environment for exploring various 
-algorithms in computational cosmology. Please refer to original `[ReadMe](ReadMeNoName.md)` or 
-`[NoName](https://github.com/yipihey/NoName)` repository for further details of the original code.
+algorithms in computational cosmology. Please refer to original [`ReadMe`](ReadMeNoName.md) or 
+[`NoName`](https://github.com/yipihey/NoName) repository for further details of the original code.
 
