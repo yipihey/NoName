@@ -2,7 +2,7 @@
 ## A code for Computational Cosmology Algorithm Exploration
 (2/2016-)
 
-![alt text](figlyman.png "Logo Title Text 2")
+
 
 # Introduction
 NoName is the beginnings of a Computational Cosmology code of so far 
