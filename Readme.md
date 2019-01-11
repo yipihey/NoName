@@ -17,6 +17,7 @@ More details of the work can be found in [final report](report.pdf).
 
 <br>
 <br>
+
 | ![alt text](figsim.png "evolution") |
 |:--:| 
 | The sample numerical simulation of dark matter and ordinary matter(baryon) distribution.|
@@ -32,6 +33,7 @@ potential well of dark matter.
 
 <br>
 <br>
+
 | ![alt text](figlymansim.png "simulated") |
 |:--:| 
 | The simulated Lyman-alpha forest spectra |
