@@ -11,12 +11,9 @@ compare the artificial Lyman-alpha spectra depending on the mass of the dark
 matter particles and check whether there really appears difference in small
 scale features of the spectra. We argue that careful comparison of the actual
 observation and simulation can give us a lower bound on the dark matter mass.
-<br>
-<br>
+
 More details of the work can be found in [final report](report.pdf).
 
-<br>
-<br>
 
 | ![alt text](figsim.png "evolution") |
 |:--:| 
@@ -31,8 +28,6 @@ the top to bottom, the corresponding redshifts are `z = 11.42, 6.83, 4.97, 3.92`
 Note that although ordinary matter started with uniform distribution, they quickly fall into the
 potential well of dark matter. 
 
-<br>
-<br>
 
 | ![alt text](figlymansim.png "simulated") |
 |:--:| 
