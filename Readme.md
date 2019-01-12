@@ -14,6 +14,8 @@ observation and simulation can give us a lower bound on the dark matter mass.
 
 ### Summary of Numerical Simulation
 
+All codes are written in Julia.
+
 We use Particle Mesh(PM) method for realizing a system with interacting particles (dark matter) and fluid (ordinary matter).
 The basic principle of PM method is to convert the system of particles into a grid of density values. 
 For density assignment, we choose Cloud-in-Cell; i.e. particles are cubes of uniform density and of one grid cell size. 
