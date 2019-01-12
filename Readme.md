@@ -12,6 +12,17 @@ matter particles and check whether there really appears difference in small
 scale features of the spectra. We argue that careful comparison of the actual
 observation and simulation can give us a lower bound on the dark matter mass.
 
+### Summary of Numerical Simulation
+
+We use Particle Mesh(PM) method for realizing a system with interacting particles (dark matter) and fluid (ordinary matter).
+The basic principle of PM method is to convert the system of particles into a grid of density values. 
+For density assignment, we choose Cloud-in-Cell; i.e. particles are cubes of uniform density and of one grid cell size. 
+
+There are five differential equations in time and spatial coordinates `x,y,z` which govern the system,
+in terms of density, energy, 3D momentums, and pressure. We discretize those differential equations and evolve the system in time discretely.
+
+We use periodic 2D volume of 100x100 grid size. 
+
 More details of the work can be found in [final report](report.pdf).
 
 
