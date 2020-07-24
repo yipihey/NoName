@@ -6,7 +6,7 @@ global const gyr_in_s = 1.e9*31_556_952
 # recover time from redshift by rootfinding on the age function
 function z_from_t(cosmo, t)
     # this function will not work if we simulate the Universe for ages older than 500 billion years. So 35 times into the future... (not likely)
-    res = fzero(x -> age_gyr(cosmo, x) - t, [-1.+1e-15, 1e80]) # between 0 and 1e3 Gyr ...
+    res = fzero(x -> age_gyr(cosmo, x) - t, [-1.0+1e-15, 1e80]) # between 0 and 1e3 Gyr ...
     return res
 end
 
@@ -29,8 +29,8 @@ end
 
 function dadt(cosmo, a; zwherea1=0.0)
     tv = a/(1.0 + zwherea1) 
-    O_k = 1.-cosmo.Ω_m-cosmo.Ω_Λ-cosmo.Ω_r # curvature today
-    dadt = sqrt(2./(3.*cosmo.Ω_m * a) *    # (Peebles93, eq. 13.3)
+    O_k = 1-cosmo.Ω_m-cosmo.Ω_Λ-cosmo.Ω_r # curvature today
+    dadt = sqrt(2.0/(3.0*cosmo.Ω_m * a) *    # (Peebles93, eq. 13.3)
                 (cosmo.Ω_m + O_k * tv +
                  cosmo.Ω_Λ * tv^3))
     return dadt
@@ -45,7 +45,9 @@ function z_from_a(cosmo, a; zwherea1=0.0)
     (1.0 + zwherea1)/a - 1.0
 end
 
-type CodeUnits
+#type CodeUnits
+struct CodeUnits
+ 
     ρ
     L
     T
