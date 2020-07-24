@@ -328,11 +328,11 @@ function InitializeHydroSimulation(gp, gd, p)
             for i in 1:size(ρ,1)
                 x = g.LE + 0.5*dx .* [i, j, k] # position
                 r = [i,j,k]
-                (ρ[r], E[r], V₁[r], V₂[r], V₃[r]) =
+                (ρ[r...], E[r...], V₁[r...], V₂[r...], V₃[r...]) =
                     initialvalues(x)
                 if DualEnergyFormalism
-                    ε[r] = E[r] - (0.5 *
-                                   (V₁[r].^2+V₂[r].^2+V₃[r].^2))
+                    ε[r...] = E[r...] - (0.5 *
+                                   (V₁[r...].^2+V₂[r...].^2+V₃[r...].^2))
                 end
             end
         end

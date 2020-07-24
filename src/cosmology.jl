@@ -6,7 +6,7 @@ global const gyr_in_s = 1.e9*31_556_952
 # recover time from redshift by rootfinding on the age function
 function z_from_t(cosmo, t)
     # this function will not work if we simulate the Universe for ages older than 500 billion years. So 35 times into the future... (not likely)
-    res = fzero(x -> age_gyr(cosmo, x) - t, [-1.+1e-16, 1e90]) # between 0 and 1e3 Gyr ...
+    res = fzero(x -> age_gyr(cosmo, x) - t, [-1.+1e-15, 1e80]) # between 0 and 1e3 Gyr ...
     return res
 end
 
